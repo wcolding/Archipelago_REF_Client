@@ -560,12 +560,22 @@ bool APGameComplete() {
     return AP != nullptr && AP->StatusUpdate(APClient::ClientStatus::GOAL);
 }
 
-std::string APGetItemName(int item_id) {
+int64_t APGetItemId(std::string item_name) {
+    if (AP == nullptr) return -1;
+    return AP->get_item_id(item_name);
+}
+
+std::string APGetItemName(int64_t item_id) {
     if (AP == nullptr) return "";
     return AP->get_item_name(item_id);
 }
 
-std::string APGetLocationName(int location_id) {
+int64_t APGetLocationId(std::string location_name) {
+    if (AP == nullptr) return -1;
+    return AP->get_location_id(location_name);
+}
+
+std::string APGetLocationName(int64_t location_id) {
     if (AP == nullptr) return "";
     return AP->get_location_name(location_id);
 }
@@ -597,28 +607,32 @@ int APGetTeamNumber() {
 
 int APLocationChecks(sol::table table) {
     if (AP == nullptr) return -1;
+
     std::list<int64_t> locations;
-    for (int i = 1; i < table.size(); i++) {
-        int location = table[i];
+    for (std::size_t i = 1; i <= table.size(); i++) {
+        int64_t location = table[i];
         locations.push_back(location);
     }
+
     return AP->LocationChecks(locations);
 }
 
 int APLocationScouts(sol::table table, int create_as_hint = 0) {
     if (AP == nullptr) return -1;
+
     std::list<int64_t> locations;
-    for (int i = 1; i < table.size(); i++) {
+    for (std::size_t i = 1; i <= table.size(); i++) {
         int64_t location = table[i];
         locations.push_back(location);
     }
+
     return AP->LocationScouts(locations, create_as_hint);
 }
 
 int APGetData(sol::table table) {
     if (AP == nullptr) return -1;
     std::list <std::string> keys;
-    for (int i = 1; i < table.size(); i++) {
+    for (std::size_t i = 1; i < table.size(); i++) {
         std::string str = table[i];
         keys.push_back(str);
     }
@@ -632,7 +646,7 @@ int APSetData(sol::table table) {
     bool want_reply = table["want_reply"];
     std::list<APClient::DataStorageOperation> operations;
     sol::table opTable = table["operations"];
-    for (int i = 1; i < table.size(); i++) {
+    for (std::size_t i = 1; i < table.size(); i++) {
         APClient::DataStorageOperation* op = new APClient::DataStorageOperation();
         op->operation = opTable[i]["operation"];
         op->value = opTable[i]["value"];
@@ -644,7 +658,7 @@ int APSetData(sol::table table) {
 int APSetNotify(sol::table table) {
     if (AP == nullptr) return -1;
     std::list <std::string> keys;
-    for (int i = 1; i < table.size(); i++) {
+    for (std::size_t i = 1; i < table.size(); i++) {
         std::string str = table[i];
         keys.push_back(str);
     }
@@ -661,7 +675,7 @@ bool ConnectAP(std::string uri) {
         if (AP) delete AP;
         AP = nullptr;
 
-        if (!uri.empty() && uri.find("ws://") != 0 && uri.find("wss://") != 0) uri = "ws://" + uri;
+        //if (!uri.empty() && uri.find("ws://") != 0 && uri.find("wss://") != 0) uri = "ws://" + uri;
         std::string game = lua["APGameName"];
         if (!game.empty()) {
             isWithoutRando = false;
@@ -669,6 +683,7 @@ bool ConnectAP(std::string uri) {
         console.AddLog("Connecting to AP...");
         if (uri.empty()) AP = new APClient(uuid, game);
         else AP = new APClient(uuid, game, uri);
+
         AP->set_socket_connected_handler([]() {
             API::LuaLock _{};
             sol::state_view lua{ g_lua };
@@ -684,6 +699,14 @@ bool ConnectAP(std::string uri) {
             sol::state_view lua{ g_lua };
             lua["APSlotConnectedHandler"](JsonToTable(data));
             });
+        AP->set_slot_refused_handler([](const std::list<std::string>& msg) {
+            API::LuaLock _{};
+            sol::state_view lua{ g_lua };
+            for (auto row : msg) {
+                console.AddLog(row.c_str());
+            }
+            lua["APSlotRefusedHandler"](JsonToTable(msg));
+            });
         AP->set_room_info_handler([]() {
             API::LuaLock _{};
             sol::state_view lua{ g_lua };
@@ -692,7 +715,7 @@ bool ConnectAP(std::string uri) {
             if (isWithoutRando) {
                 tags->push_back("TextOnly");
             }
-            if (!AP->ConnectSlot(std::string(console.UserBuf), std::string(console.PassBuf), 7, *tags, {0,3,5})) {
+            if (!AP->ConnectSlot(std::string(console.UserBuf), std::string(console.PassBuf), 7, *tags, {0,4,3})) {
                 console.AddLog("Failed to connect to the slot.");
             }
             }
@@ -762,9 +785,9 @@ bool ConnectAP(std::string uri) {
             sol::state_view lua{ g_lua };
             lua["APSetReplyHandler"](key, JsonToTable(value), JsonToTable(original_value));
             });
-        AP->set_data_package_changed_handler([](const json& data) {
+        /*AP->set_data_package_changed_handler([](const json& data) {
             AP->save_data_package(DATAPACKAGE_CACHE);
-            });
+            });*/
         AP->set_print_handler([](const std::string& msg) {
             API::LuaLock _{};
             sol::state_view lua{ g_lua };
@@ -803,7 +826,6 @@ bool ConnectAP(std::string uri) {
         console.AddLog(error.c_str());
         return false;
     }
-
 }
 #pragma endregion
 
@@ -866,7 +888,9 @@ void on_lua_state_created(lua_State* l) {
     lua["APSay"] = APSay;
     lua["APGameComplete"] = APGameComplete;
     lua["APIsConnected"] = APIsConnected;
+    lua["APGetItemId"] = APGetItemId;
     lua["APGetItemName"] = APGetItemName;
+    lua["APGetLocationId"] = APGetLocationId;
     lua["APGetLocationName"] = APGetLocationName;
     lua["APGetPlayerAlias"] = APGetPlayerAlias;
     lua["APGetPlayerNumber"] = APGetPlayerNumber;
@@ -964,9 +988,6 @@ extern "C" __declspec(dllexport) void reframework_plugin_required_version(REFram
     version->major = REFRAMEWORK_PLUGIN_VERSION_MAJOR;
     version->minor = REFRAMEWORK_PLUGIN_VERSION_MINOR;
     version->patch = REFRAMEWORK_PLUGIN_VERSION_PATCH;
-
-    // Optionally, specify a specific game name that this plugin is compatible with.
-    version->game_name = "MHRISE";
 }
 
 extern "C" __declspec(dllexport) bool reframework_plugin_initialize(const REFrameworkPluginInitializeParam * param) {

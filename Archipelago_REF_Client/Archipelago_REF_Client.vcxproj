@@ -108,7 +108,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;ARCHIPELAGOREFCLIENT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;ARCHIPELAGOREFCLIENT_EXPORTS;WSWRAP_NO_SSL;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
