@@ -7,9 +7,6 @@
 [submodule "Archipelago_REF_Client/subprojects/imgui"]
 	path = Archipelago_REF_Client/subprojects/imgui
 	url = https://github.com/ocornut/imgui
-[submodule "Archipelago_REF_Client/subprojects/websocketpp"]
-	path = Archipelago_REF_Client/subprojects/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
 [submodule "Archipelago_REF_Client/subprojects/asio"]
 	path = Archipelago_REF_Client/subprojects/asio
 	url = https://github.com/chriskohlhoff/asio.git
