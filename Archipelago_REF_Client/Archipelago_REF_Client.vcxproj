@@ -108,11 +108,11 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;ARCHIPELAGOREFCLIENT_EXPORTS;WSWRAP_NO_SSL;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;ARCHIPELAGOREFCLIENT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions);WIN32_LEAN_AND_MEAN;_WIN32_WINNT=0x0600;_CRT_SECURE_NO_WARNINGS;BOOST_ASIO_USE_TS_EXECUTOR_AS_DEFAULT=1</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>include;subprojects/asio/include;subprojects/json/include;subprojects\websocketpp;subprojects\wswrap\include;subprojects\valijson\include;subprojects/apclientpp;subprojects/sol;subprojects/lua/src;subprojects/imgui</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\openssl-3.2.0\x64\include;include;subprojects\asio\asio\include;subprojects/json/include;subprojects\websocketpp;subprojects\wswrap\include;subprojects\valijson\include;subprojects/apclientpp;subprojects/sol;subprojects/lua/src;subprojects/imgui</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:__cplusplus /bigobj %(AdditionalOptions)</AdditionalOptions>
       <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
@@ -120,6 +120,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
+      <AdditionalDependencies>C:\openssl-3.2.0\x64\lib\libcrypto.lib;C:\openssl-3.2.0\x64\lib\libssl.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
