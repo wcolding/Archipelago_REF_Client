@@ -6,6 +6,7 @@
 #define ASIO_HAS_CSTDINT
 #define ASIO_HAS_STD_SHARED_PTR
 #define ASIO_HAS_STD_TYPE_TRAITS
+
 #include <apclient.hpp>
 #include <apuuid.hpp>
 #include <nlohmann/json.hpp>
@@ -631,8 +632,8 @@ int APLocationScouts(sol::table table, int create_as_hint = 0) {
 
 int APGetData(sol::table table) {
     if (AP == nullptr) return -1;
-    std::list <std::string> keys;
-    for (std::size_t i = 1; i < table.size(); i++) {
+    std::list<std::string> keys;
+    for (std::size_t i = 1; i <= table.size(); i++) {
         std::string str = table[i];
         keys.push_back(str);
     }
@@ -642,23 +643,31 @@ int APGetData(sol::table table) {
 int APSetData(sol::table table) {
     if (AP == nullptr) return -1;
     std::string key = table["key"];
-    auto default_val = table["default"];
+    std::string default_val = table["default"];
     bool want_reply = table["want_reply"];
-    std::list<APClient::DataStorageOperation> operations;
     sol::table opTable = table["operations"];
-    for (std::size_t i = 1; i < table.size(); i++) {
+
+    std::list<APClient::DataStorageOperation> operations;
+
+    for (std::size_t i = 1; i <= opTable.size(); i++) {
+        sol::table opTableItem = opTable[i];
+        std::string opTableItemOperation = opTableItem["operation"];
+        std::string opTableItemValue = opTableItem["value"];
+
         APClient::DataStorageOperation* op = new APClient::DataStorageOperation();
-        op->operation = opTable[i]["operation"];
-        op->value = opTable[i]["value"];
+        op->operation = opTableItemOperation;
+        op->value = json::parse(opTableItemValue);
+
         operations.push_back(*op);
     }
-    return AP->Set(key,default_val, want_reply, operations);
+    
+    return AP->Set(key, json::parse(default_val), want_reply, operations);
 }
 
 int APSetNotify(sol::table table) {
     if (AP == nullptr) return -1;
-    std::list <std::string> keys;
-    for (std::size_t i = 1; i < table.size(); i++) {
+    std::list<std::string> keys;
+    for (std::size_t i = 1; i <= table.size(); i++) {
         std::string str = table[i];
         keys.push_back(str);
     }
