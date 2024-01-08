@@ -59,10 +59,15 @@ APClient* AP = nullptr;
 
 bool isOpen = false;
 bool isWithoutRando = true;
+bool isClientEnabled = true;
+std::string clientDisabledMessage = "Client has been disabled by game.";
 
 // Function Prototypes
 bool APSay(std::string msg);
+bool APSync();
+bool APIsConnected();
 bool ConnectAP(std::string uri = "");
+bool DisconnectAP();
 
 std::default_random_engine randgen;
 
@@ -147,8 +152,12 @@ struct ExampleAppConsole
         if (api->reframework()->is_drawing_ui()) {
             bool copy_to_clipboard = false;
             ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-            if (!ImGui::Begin(title))
+            if (!ImGui::Begin(title) || !isClientEnabled)
             {
+                if (!isClientEnabled) {
+                    ImGui::Text(clientDisabledMessage.data());
+                }
+
                 ImGui::End();
                 return;
             }
@@ -157,7 +166,12 @@ struct ExampleAppConsole
             ImGui::SameLine();
             // TODO: display items starting from the bottom
 
-            if (ImGui::SmallButton("Connect")) { ConnectAP(std::string(ConnectBuf)); }
+            if (!APIsConnected() && ImGui::SmallButton("Connect")) { 
+                ConnectAP(std::string(ConnectBuf)); 
+            }
+            if (APIsConnected() && ImGui::SmallButton("Disconnect")) {
+                DisconnectAP();
+            }
             ImGui::InputText(": Username", UserBuf, 256);
             ImGui::InputText(": Password", PassBuf, 256);
 
@@ -550,7 +564,11 @@ sol::table JsonToTable(const json& data) {
 bool APSay(std::string msg) {
     if (AP == nullptr || !(AP->get_state() == APClient::State::SLOT_CONNECTED)) return false;
     return AP->Say(msg);
+}
 
+bool APSync() {
+    if (AP == nullptr || !(AP->get_state() == APClient::State::SLOT_CONNECTED)) return false;
+    return AP->Sync();
 }
 
 bool APIsConnected() {
@@ -674,6 +692,15 @@ int APSetNotify(sol::table table) {
     return AP->SetNotify(keys);
 }
 
+void EnableInGameClient() {
+    isClientEnabled = true;
+}
+
+void DisableInGameClient(std::string disabled_message) {
+    clientDisabledMessage = disabled_message;
+    isClientEnabled = false;
+}
+
 bool ConnectAP(std::string uri) {
     try {
         API::LuaLock _{};
@@ -706,8 +733,17 @@ bool ConnectAP(std::string uri) {
         AP->set_slot_connected_handler([](const json& data) {
             API::LuaLock _{};
             sol::state_view lua{ g_lua };
+            console.AddLog("Connected.");
             lua["APSlotConnectedHandler"](JsonToTable(data));
             });
+        /*
+        * This is actually not implemented in apclientpp right now (it's set but never used).
+        * So we wrapped disconnect in a method instead that calls our "slotdisconnectedhandler".
+        *
+        AP->set_slot_disconnected_handler([]() {
+            DisconnectAP();
+        });
+        */
         AP->set_slot_refused_handler([](const std::list<std::string>& msg) {
             API::LuaLock _{};
             sol::state_view lua{ g_lua };
@@ -836,6 +872,18 @@ bool ConnectAP(std::string uri) {
         return false;
     }
 }
+
+bool DisconnectAP() {
+    if (AP) delete AP;
+    AP = nullptr;
+
+    API::LuaLock _{};
+    sol::state_view lua{ g_lua };
+    console.AddLog("Disconnected.");
+    lua["APSlotDisconnectedHandler"]();
+
+    return true;
+}
 #pragma endregion
 
 
@@ -895,6 +943,7 @@ void on_lua_state_created(lua_State* l) {
     // adds a new function to call from lua!
     lua["APGameName"] = ""; //Default to allow for calling as a text client, and ensure connection doesn't immediately fail
     lua["APSay"] = APSay;
+    lua["APSync"] = APSync;
     lua["APGameComplete"] = APGameComplete;
     lua["APIsConnected"] = APIsConnected;
     lua["APGetItemId"] = APGetItemId;
@@ -911,6 +960,8 @@ void on_lua_state_created(lua_State* l) {
     lua["APGetData"] = APGetData;
     lua["APSetData"] = APSetData;
     lua["APSetNotify"] = APSetNotify;
+    lua["EnableInGameClient"] = EnableInGameClient;
+    lua["DisableInGameClient"] = DisableInGameClient;
     lua["SetRandomSeed"] = SetRandomSeed;
     lua["SetSpecificSeed"] = SetSpecificSeed;
     lua["UniformRandomInteger"] = UniformRandomInteger;
