@@ -99,7 +99,7 @@ public:
     }
 
     inline const auto sdk() const {
-        return m_sdk;
+        return this->m_sdk;
     }
 
     inline const auto tdb() const { 
